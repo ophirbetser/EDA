@@ -1,6 +1,6 @@
 #------------------------------------------------------------------------------#
 # script info and options ----
-#### File Name:   EDA_ArgentinaCPI         
+#### File Name:   STAT_cross_correlation         
 #### Date:        2022-08-14                
 #### Author:      Ophir Betser              
 #### Author Mail: ophir.betser@gmail.com    
@@ -27,74 +27,40 @@ pacman::p_load(
 options(scipen=999) # Disables scientific notation          
 options(digits=6)   # Limits the number of digits printed       
 #------------------------------------------------------------------------------#  
+# https://www.r-bloggers.com/2021/08/how-to-calculate-cross-correlation-in-r/
 
-# load data ----
-data("ArgentinaCPI")
-argentina <- ArgentinaCPI %>% data.table()
-### read info about the data set
-##### Time series of consumer price index (CPI) in Argentina 
-##### (index with 1969(4) = 1).
-##### Format
-##### A quarterly univariate time series from 1970(1) to 1989(4).
-?ArgentinaCPI
+Spend <- c(5, 3, 6, 5, 8, 9, 10, 17, 12, 11, 10, 9)
+Income <- c(25, 29, 22, 34, 22, 28, 29, 31, 34, 45, 45, 40)
+ccf(Spend, Income)
 
-
-### first look
-argentina %>% head(3)
-skimr::skim(argentina)
-
+plot(Income, Spend)
 #------------------------------------------------------------------------------#  
-### set data up
-year <- rep(seq(1970, 1989), each = 4)
-quarter <- rep(seq(1, 4), time = 20)
 
-argentina <- 
+dt <- 
   data.table(
-    year = year,
-    quarter = quarter,
-    CPI = argentina$.
+    spend = Spend,
+    income = Income
   )
 
-argentina$date <- 
-  paste0(argentina$year, "-", argentina$quarter) %>% 
-  as.yearqtr()
+dt[, spend_sm4:= shift(spend,-4)]
+dt[, spend_sm3:= shift(spend,-3)]
+dt[, spend_sm2:= shift(spend,-2)]
+dt[, spend_sm1 := shift(spend,-1)]
+dt[, spend_s0 := shift(spend,0)]
+dt[, spend_s1 := shift(spend,1)]
+dt[, spend_s2 := shift(spend,2)]
+dt[, spend_s3 := shift(spend,3)]
+dt[, spend_s4 := shift(spend,4)]
 
-#------------------------------------------------------------------------------#  
-# plot data ----
-argentina %>% 
-  ggplot() +
-  aes(
-    x = date,
-    y = CPI
-  ) +
-  geom_line() +
-  geom_point() +
-  theme_classic() + 
-  labs(title = "CPI by date", subtitle = "")
+visdat::vis_cor(dt)
 
-argentina %>% 
-  ggplot() +
-  aes(
-    x = date,
-    y = log(CPI)
-  ) +
-  geom_line() +
-  geom_point() +
-  theme_classic() + 
-  labs(title = "CPI by date", subtitle = "")
-
-argentina %>% 
-  ggplot() +
-  aes(
-    x = date,
-    y = log(log(CPI))
-  ) +
-  geom_line() +
-  geom_point() +
-  theme_classic() + 
-  labs(title = "CPI by date", subtitle = "")
-
-
+ggplot(dt) +
+  #geom_jitter(aes(x = income, y = spend)) +
+  #geom_jitter(aes(x = income, y = spend_s1), color = "blue") +
+  #geom_jitter(aes(x = income, y = spend_s2), color = "red") +
+  geom_jitter(aes(x = income, y = spend_s3), color = "green") +
+  #geom_jitter(aes(x = income, y = spend_s4), color = "orange") +
+  theme_classic2()
 
 #------------------------------------------------------------------------------#  
 #------------------------------------------------------------------------------#  
@@ -106,7 +72,3 @@ argentina %>%
 dev.off()
 cat("\014")
 rm(list = ls()) 
-
-
-
-
